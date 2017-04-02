@@ -24,6 +24,7 @@ PKG_LICENSE="GPL"
 PKG_SITE="http://www.openelec.tv"
 PKG_URL=""
 PKG_DEPENDS_TARGET="toolchain libc:init busybox:init linux:init plymouth-lite:init util-linux:init e2fsprogs:init dosfstools:init"
+PKG_PRIORITY="optional"
 PKG_SECTION="virtual"
 PKG_SHORTDESC="initramfs: Metapackage for installing initramfs"
 PKG_LONGDESC="debug is a Metapackage for installing initramfs"
@@ -44,25 +45,19 @@ fi
 post_install() {
   ( cd $ROOT/$BUILD/initramfs
     if [ "$TARGET_ARCH" = "x86_64" -o "$TARGET_ARCH" = "powerpc64" ]; then
-      ln -sf /usr/lib $ROOT/$BUILD/initramfs/lib64
-      mkdir -p $ROOT/$BUILD/initramfs/usr
-      ln -sf /usr/lib $ROOT/$BUILD/initramfs/usr/lib64
+      ln -s /lib $ROOT/$BUILD/initramfs/lib64
     fi
 
     if [ $TARGET_KERNEL_ARCH == "arm64" ] && [ $TARGET_ARCH == "arm" ]; then
       STRIP=$ROOT/$TOOLCHAIN/lib/gcc-linaro-aarch64-linux-gnu/bin/aarch64-linux-gnu-strip
     fi
 
-    for MOD in `find ./usr/lib/modules/ -type f -name *.ko`; do
+    for MOD in `find ./lib/modules/ -type f -name *.ko`; do
       $STRIP --strip-debug $MOD
     done
 
-    ln -sf /usr/lib $ROOT/$BUILD/initramfs/lib
-    ln -sf /usr/bin $ROOT/$BUILD/initramfs/bin
-    ln -sf /usr/sbin $ROOT/$BUILD/initramfs/sbin
-
     mkdir -p $ROOT/$BUILD/image/
     fakeroot -- sh -c \
-      "mkdir -p dev; mknod -m 600 dev/console c 5 1; find . | cpio -H newc -ov -R 0:0 | lzop --best > $ROOT/$BUILD/image/initramfs.cpio"
+      "mkdir -p dev; mknod -m 600 dev/console c 5 1; find . | cpio -H newc -ov -R 0:0 | lzop > $ROOT/$BUILD/image/initramfs.cpio"
   )
 }
